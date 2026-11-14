@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5등급제 내신 계산기 - 예상 석차 · 등급 찾기 · 평균 등급</title>
+<meta name="description" content="성적표의 원점수, 과목평균, 성취도 비율만 넣으면 예상 석차와 점수 분포를 보여 줘요. 석차로 등급 찾기, 평균 등급 계산도 됩니다.">
+<link rel="canonical" href="https://jeonghoon10415-gif.github.io/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="5등급제 내신 계산기">
+<meta property="og:title" content="5등급제 내신 계산기 - 내 예상 석차는 몇 등?">
+<meta property="og:description" content="성적표 숫자만 넣으면 예상 석차, 등급, 점수 분포까지 바로 확인해요.">
+<meta property="og:url" content="https://jeonghoon10415-gif.github.io/">
+<meta property="og:image" content="https://jeonghoon10415-gif.github.io/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#F6F7F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B0F17" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230C1729'/%3E%3Cpath d='M10 46c10 0 13-26 22-26s12 26 22 26' fill='none' stroke='%2362E2B1' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- 검색 등록(네이버·구글) 확인 태그 자리 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;700;800&family=Nanum+Gothic:wght@400;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* 레이아웃: 큰 흰 카드 하나 안에 알약 탭 3개 + 내용. 각 탭은 왼쪽 입력, 오른쪽 결과(남색 결과 카드 → 테두리 카드). 900px 아래에서는 한 줄로 쌓임. 그 아래 설명·FAQ 카드 */
+:root {
+  --bg: #F6F7F8;
+  --surface: #FFFFFF;
+  --ink: #101828;
+  --sub: #667085;
+  --line: #E3E6EA;
+  --field: #D5D9DF;
+  --seg: #F1F3F5;
+  --navy: #0C1729;
+  --mint: #62E2B1;
+  --chip-bg: #0C1729;
+  --chip-ink: #62E2B1;
+  --accent: #0A8560;
+  --accent-soft: #E9FAF2;
+  --area: #EDF0F3;
+  --danger: #D63A2F;
+  --sys: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --sans: "Noto Sans KR", var(--sys);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0F17; --surface: #131A26; --ink: #EEF1F5; --sub: #98A2B3; --line: #263041; --field: #344156; --seg: #1B2433;
+    --navy: #1C2940; --chip-bg: #62E2B1; --chip-ink: #0C1729; --accent: #62E2B1; --accent-soft: #14352B; --area: #1E2735; --danger: #FF7A6E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0F17; --surface: #131A26; --ink: #EEF1F5; --sub: #98A2B3; --line: #263041; --field: #344156; --seg: #1B2433;
+  --navy: #1C2940; --chip-bg: #62E2B1; --chip-ink: #0C1729; --accent: #62E2B1; --accent-soft: #14352B; --area: #1E2735; --danger: #FF7A6E; color-scheme: dark;
+}
+:root[data-font="nanum"] { --sans: "Nanum Gothic", var(--sys); }
+:root[data-font="a1"] { --sans: "Gothic A1", var(--sys); }
+:root[data-font="system"] { --sans: var(--sys); }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-text-size-adjust: 100%; }
+body { word-break: keep-all; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; padding: 0 4px; }
+.shell { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px 16px 20px; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+@media (min-width: 900px) { .shell { padding: 36px 40px 40px; border-radius: 24px; gap: 28px; } }
+
+.tabs { display: inline-flex; align-self: flex-start; background: var(--seg); border-radius: 14px; padding: 5px; gap: 2px; }
+.tabs a { display: flex; align-items: center; justify-content: center; height: 44px; padding: 0 18px; border-radius: 10px; font-size: 15px; font-weight: 500; color: var(--ink); text-decoration: none; white-space: nowrap; }
+.tabs a.on { background: var(--chip-bg); color: var(--chip-ink); font-weight: 700; }
+@media (max-width: 520px) { .tabs { display: grid; grid-template-columns: repeat(3, 1fr); align-self: stretch; } .tabs a { padding: 0 6px; } }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (min-width: 900px) { .grid { grid-template-columns: 380px minmax(0, 1fr); gap: 40px; } }
+.col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.phead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.phead > span { display: inline-flex; align-items: center; gap: 10px; }
+h2 { font-size: 16px; font-weight: 700; }
+.meta { font-size: 13px; color: var(--sub); font-variant-numeric: tabular-nums; }
+.tag { font-size: 12px; font-weight: 500; color: var(--accent); background: var(--accent-soft); padding: 3px 8px; border-radius: 6px; }
+.link { font-size: 14px; font-weight: 700; color: var(--accent); }
+.btn { height: 44px; padding: 0 16px; border-radius: 10px; background: var(--chip-bg); color: var(--chip-ink); font-size: 14px; font-weight: 700; }
+.btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--field); font-weight: 500; }
+.btn:active { transform: translateY(1px); }
+.subh { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--line); padding-top: 18px; }
+.subh h3 { font-size: 15px; font-weight: 700; }
+.subh i { font-style: normal; font-size: 13px; color: var(--sub); }
+
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 12px; }
+.form.one { grid-template-columns: 1fr; }
+.form.c5 { grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.f { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.f label { font-size: 14px; font-weight: 500; display: flex; justify-content: space-between; gap: 6px; }
+.f label i { font-style: normal; font-weight: 400; color: var(--sub); }
+.f .in { position: relative; }
+.f input { width: 100%; height: 52px; border: 1px solid var(--field); border-radius: 10px; background: var(--surface); padding: 0 34px 0 14px; font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums; outline: none; }
+.f .in.w input { padding-right: 52px; }
+.f input:focus { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.f input::placeholder { color: var(--sub); font-weight: 400; font-size: 15px; opacity: .8; }
+.f .u { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--sub); pointer-events: none; }
+.form.c5 .f label { justify-content: center; font-weight: 700; }
+.form.c5 .f input { padding: 0 2px; text-align: center; font-size: 16px; }
+.err { font-size: 14px; color: var(--danger); font-weight: 500; }
+
+/* 남색 결과 카드 */
+.hero { background: var(--navy); color: #FFFFFF; border-radius: 18px; padding: 26px 28px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.hero .cap { font-size: 14px; font-weight: 700; }
+.hero .big { font-size: 56px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; color: var(--mint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hero .line { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.hero .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, .14); }
+.hero .stats div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hero .stats span, .hero .stats small { font-size: 13px; opacity: .72; font-variant-numeric: tabular-nums; }
+.hero .stats b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 520px) { .hero { padding: 22px 20px; } .hero .big { font-size: 48px; } }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.card.tbl { padding: 20px 0 6px; gap: 12px; }
+.card.tbl > .phead, .card.tbl > h2 { padding: 0 20px; }
+.card.tbl th:first-child, .card.tbl td:first-child { padding-left: 20px; }
+.card.tbl th:last-child, .card.tbl td:last-child { padding-right: 20px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+th, td { padding: 12px 8px; text-align: right; white-space: nowrap; }
+th { font-size: 13px; font-weight: 500; color: var(--sub); padding-top: 0; padding-bottom: 8px; }
+tbody td { border-top: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+td:first-child, td:last-child { font-weight: 700; }
+tr.me td { background: var(--accent-soft); }
+
+#chart { width: 100%; min-height: 230px; }
+#chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.c-tick { font-size: 11px; fill: var(--sub); }
+.c-lab { font-size: 11px; font-weight: 700; fill: var(--ink); }
+.c-avg { font-size: 11px; font-weight: 500; fill: var(--sub); }
+.c-lab, .c-avg { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.c-me { font-size: 12px; font-weight: 700; fill: var(--chip-ink); }
+.sim { border-top: 1px solid var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.sim .row2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sim label { font-size: 14px; font-weight: 700; }
+.sim output { font-size: 14px; color: var(--sub); font-variant-numeric: tabular-nums; }
+.sim output b { color: var(--ink); }
+.sim input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; }
+
+/* 평균 등급 */
+.avg { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; grid-template-areas: "hero" "list" "goal"; align-items: start; }
+@media (min-width: 900px) { .avg { grid-template-columns: minmax(0, 1fr) 380px; gap: 24px 40px; grid-template-areas: "list hero" "list goal"; grid-template-rows: auto 1fr; } }
+.avg > .hero { grid-area: hero; }
+.avg > .a-list { grid-area: list; }
+.avg > .a-goal { grid-area: goal; }
+.sems { display: grid; grid-template-columns: repeat(6, 1fr); background: var(--seg); border-radius: 12px; padding: 4px; gap: 2px; }
+.sems button { padding: 6px 0 7px; border-radius: 9px; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 12px; color: var(--sub); font-weight: 500; }
+.sems button b { font-size: 14px; color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.sems button.on { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+.rowhead, .row { display: grid; grid-template-columns: minmax(0, 1fr) 48px 170px 24px; gap: 8px; align-items: center; }
+.rowhead { font-size: 13px; color: var(--sub); padding-bottom: 8px; }
+.rowhead span:nth-child(2), .rowhead span:nth-child(3) { text-align: center; }
+.row { border-top: 1px solid var(--line); min-height: 56px; }
+.row input { width: 100%; height: 44px; border: 0; background: transparent; font-size: 16px; font-weight: 500; outline: none; text-overflow: ellipsis; }
+.row input.cr { height: 38px; text-align: center; border: 1px solid var(--field); border-radius: 8px; font-variant-numeric: tabular-nums; }
+.row input:focus { box-shadow: inset 0 -2px 0 var(--ink); }
+.row input.cr:focus { box-shadow: inset 0 0 0 1px var(--ink); border-color: var(--ink); }
+.mark { display: flex; justify-content: space-between; gap: 4px; }
+.mark button { flex: 1; height: 38px; border-radius: 8px; border: 1px solid var(--field); font-size: 14px; font-weight: 500; color: var(--sub); font-variant-numeric: tabular-nums; }
+.mark button[aria-pressed="true"] { background: var(--chip-bg); border-color: var(--chip-bg); color: var(--chip-ink); font-weight: 700; }
+.row .del { color: var(--sub); font-size: 13px; height: 40px; }
+@media (max-width: 520px) { .rowhead, .row { grid-template-columns: minmax(0, 1fr) 40px 150px 20px; gap: 6px; } .mark { gap: 3px; } }
+.kv { display: flex; flex-direction: column; }
+.kv div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 14px; color: var(--sub); }
+.kv div:last-child { padding-bottom: 0; }
+.kv b { font-size: 20px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* 설명 · FAQ */
+.faq { gap: 14px; }
+.faq h2 { font-size: 17px; }
+.faq details { border-top: 1px solid var(--line); padding: 14px 0 0; }
+.faq summary { font-size: 15px; font-weight: 700; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: var(--sub); font-weight: 400; }
+.faq details[open] summary::after { content: "−"; }
+.faq .a { padding-top: 8px; font-size: 14px; color: var(--sub); line-height: 1.7; max-width: 68ch; display: flex; flex-direction: column; gap: 8px; }
+.faq .a b { color: var(--ink); }
+.faq table { max-width: 420px; font-size: 14px; }
+.faq td { color: var(--ink); }
+
+footer { font-size: 12px; color: var(--sub); padding: 0 4px; }
+.dim { opacity: .35; pointer-events: none; }
+.back { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+.modal { width: 100%; max-width: 380px; max-height: 100%; overflow: auto; background: var(--surface); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.modal img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.modal .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.modal p { font-size: 12px; color: var(--sub); text-align: center; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--chip-bg); color: var(--chip-ink); padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 700; z-index: 30; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>5등급제 내신 계산기</h1>
+
+  <div class="shell">
+    <nav class="tabs" aria-label="메뉴">
+      <a href="#predict" data-tab="predict">예상 석차</a>
+      <a href="#grade" data-tab="grade">등급 찾기</a>
+      <a href="#average" data-tab="average">평균 등급</a>
+    </nav>
+
+    <main>
+      <!-- ① 예상 석차 -->
+      <div class="grid" id="view-predict">
+        <section class="col" aria-labelledby="h-in">
+          <div class="phead"><h2 id="h-in">성적표 정보</h2><span><span class="tag" id="ex-tag">예시 데이터</span><button class="link" id="b-example">예시 채우기</button></span></div>
+          <div class="form">
+            <div class="f"><label for="i-x">원점수</label><div class="in"><input id="i-x" inputmode="decimal" autocomplete="off"><span class="u">점</span></div></div>
+            <div class="f"><label for="i-mean">과목 평균</label><div class="in"><input id="i-mean" inputmode="decimal" autocomplete="off"><span class="u">점</span></div></div>
+            <div class="f"><label for="i-n">수강자 수</label><div class="in"><input id="i-n" inputmode="numeric" autocomplete="off"><span class="u">명</span></div></div>
+            <div class="f"><label for="i-sd">표준편차 <i>선택</i></label><div class="in"><input id="i-sd" inputmode="decimal" autocomplete="off" placeholder="자동 추정"></div></div>
+          </div>
+          <div class="subh"><h3>성취도별 분포비율</h3><i>선택 · %</i></div>
+          <div class="form c5">
+            <div class="f"><label for="i-a">A</label><input id="i-a" inputmode="decimal" autocomplete="off"></div>
+            <div class="f"><label for="i-b">B</label><input id="i-b" inputmode="decimal" autocomplete="off"></div>
+            <div class="f"><label for="i-c">C</label><input id="i-c" inputmode="decimal" autocomplete="off"></div>
+            <div class="f"><label for="i-d">D</label><input id="i-d" inputmode="decimal" autocomplete="off"></div>
+            <div class="f"><label for="i-e">E</label><input id="i-e" inputmode="decimal" autocomplete="off"></div>
+          </div>
+          <div class="subh"><h3>등급 컷 · 최고점</h3><i>선택</i></div>
+          <div class="form">
+            <div class="f"><label for="i-c1">1등급 컷</label><div class="in"><input id="i-c1" inputmode="decimal" autocomplete="off"><span class="u">점</span></div></div>
+            <div class="f"><label for="i-c2">2등급 컷</label><div class="in"><input id="i-c2" inputmode="decimal" autocomplete="off"><span class="u">점</span></div></div>
+            <div class="f"><label for="i-c3">3등급 컷</label><div class="in"><input id="i-c3" inputmode="decimal" autocomplete="off"><span class="u">점</span></div></div>
+            <div class="f"><label for="i-max">최고점</label><div class="in"><input id="i-max" inputmode="decimal" autocomplete="off"><span class="u">점</span></div></div>
+          </div>
+          <p class="err" id="err" hidden></p>
+        </section>
+
+        <div class="col" id="out" aria-live="polite">
+          <section class="hero" aria-label="예측 결과">
+            <span class="cap" id="p-cap">예상 석차</span>
+            <span class="big" id="p-rank">-</span>
+            <span class="line" id="p-line"></span>
+            <div class="stats">
+              <div><span>예상 등급</span><b id="p-grade">-</b></div>
+              <div><span>다음 등급까지</span><b id="p-next">-</b><small id="p-next-s"></small></div>
+            </div>
+          </section>
+          <section class="card" aria-labelledby="h-chart">
+            <div class="phead"><h2 id="h-chart">점수 분포</h2><span class="meta" id="c-meta"></span></div>
+            <div id="chart" role="img" aria-label="점수 분포 그래프"></div>
+            <div class="sim">
+              <div class="row2"><label for="sim">점수 시뮬레이션</label><output id="sim-out" for="sim"></output></div>
+              <input type="range" id="sim" min="0" max="100" step="1" value="0">
+              <div class="row2"><span class="meta" id="sim-lo"></span><button class="link" id="sim-reset" hidden>내 점수로 되돌리기</button><span class="meta" id="sim-hi"></span></div>
+            </div>
+          </section>
+          <section class="card tbl" aria-labelledby="h-cuts">
+            <div class="phead"><h2 id="h-cuts">예상 등급 컷</h2><button class="btn ghost" id="b-save">결과 카드 저장</button></div>
+            <table><thead><tr><th>등급</th><th>컷 점수</th><th>석차</th><th>인원</th></tr></thead><tbody id="cuts"></tbody></table>
+          </section>
+        </div>
+      </div>
+
+      <!-- ② 석차로 등급 찾기 -->
+      <div class="grid" id="view-grade" hidden>
+        <section class="col" aria-label="석차 입력">
+          <div class="form one">
+            <div class="f"><label for="g-n">수강자 수</label><div class="in"><input id="g-n" inputmode="numeric" autocomplete="off"><span class="u">명</span></div></div>
+            <div class="f"><label for="g-r">석차</label><div class="in"><input id="g-r" inputmode="numeric" autocomplete="off"><span class="u">등</span></div></div>
+            <div class="f"><label for="g-t">동석차 인원</label><div class="in"><input id="g-t" inputmode="numeric" autocomplete="off"><span class="u">명</span></div></div>
+          </div>
+          <p class="err" id="g-err" hidden></p>
+        </section>
+        <div class="col" id="g-out" aria-live="polite">
+          <section class="hero" aria-label="등급 결과">
+            <span class="cap">석차등급</span>
+            <span class="big" id="g-grade">-</span>
+            <span class="line" id="g-line"></span>
+          </section>
+          <section class="card tbl" aria-labelledby="h-gt">
+            <h2 id="h-gt">등급별 인원</h2>
+            <table><thead><tr><th>등급</th><th>누적 비율</th><th>석차</th><th>인원</th></tr></thead><tbody id="g-table"></tbody></table>
+          </section>
+        </div>
+      </div>
+
+      <!-- ③ 평균 등급 -->
+      <div class="avg" id="view-average" hidden>
+        <section class="hero" aria-live="polite" aria-label="평균 등급">
+          <span class="cap">전체 평균 등급</span>
+          <span class="big" id="a-total">-</span>
+          <span class="line" id="a-line"></span>
+        </section>
+        <section class="col a-list" aria-labelledby="h-a">
+          <div class="phead"><h2 id="h-a">학기별 성적</h2><span id="a-ex"><span class="tag">예시 데이터</span><button class="link" id="a-clear">지우기</button></span></div>
+          <div class="sems" id="a-sems" role="tablist" aria-label="학기 선택"></div>
+          <div>
+            <div class="rowhead"><span>과목</span><span>학점</span><span>등급</span><span></span></div>
+            <div id="a-list"></div>
+          </div>
+          <div><button class="btn ghost" id="a-add">과목 추가</button></div>
+        </section>
+        <section class="card a-goal" aria-labelledby="h-goal">
+          <h2 id="h-goal">목표 평균</h2>
+          <div class="form">
+            <div class="f"><label for="a-rem">남은 학점</label><div class="in w"><input id="a-rem" inputmode="numeric" autocomplete="off"><span class="u">학점</span></div></div>
+            <div class="f"><label for="a-target">목표 평균</label><div class="in w"><input id="a-target" inputmode="decimal" autocomplete="off"><span class="u">등급</span></div></div>
+          </div>
+          <p class="err" id="a-err" hidden></p>
+          <div class="kv">
+            <div><span>남은 학점에서 필요한 평균</span><b id="a-need">-</b></div>
+            <div><span>남은 학점이 전부 1등급이면</span><b id="a-best">-</b></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <section class="shell faq" aria-labelledby="h-faq">
+    <h2 id="h-faq">계산 기준과 자주 묻는 질문</h2>
+    <details>
+      <summary>5등급제 등급 비율은 어떻게 되나요?</summary>
+      <div class="a">
+        <table><thead><tr><th>등급</th><th>등급 비율</th><th>누적 비율</th></tr></thead><tbody>
+          <tr><td>1등급</td><td>10%</td><td>10%</td></tr><tr><td>2등급</td><td>24%</td><td>34%</td></tr><tr><td>3등급</td><td>32%</td><td>66%</td></tr><tr><td>4등급</td><td>24%</td><td>90%</td></tr><tr><td>5등급</td><td>10%</td><td>100%</td></tr>
+        </tbody></table>
+        <p>2025학년도 고1부터 적용된 기준이에요. 등급별 마지막 등수는 <b>수강자 수 × 누적 비율</b>을 반올림해서 정해요.</p>
+      </div>
+    </details>
+    <details>
+      <summary>예상 석차는 어떻게 계산하나요?</summary>
+      <div class="a">
+        <p>과목 평균과 표준편차에 맞는 점수 분포를 추정한 뒤, 내 점수보다 높은 학생의 비율에 수강자 수를 곱해요. 점수가 한쪽으로 치우친 경우도 반영해요.</p>
+        <p>성취도별 분포비율을 넣으면 90·80·70·60점 이상인 학생 비율이 성적표와 같아지도록 분포를 맞추고, 등급 컷을 넣으면 그 점수의 석차가 등급의 마지막 등수와 같아지도록 맞춰요. 넣은 정보가 많을수록 정확해져요.</p>
+      </div>
+    </details>
+    <details>
+      <summary>성취도별 분포비율은 무엇인가요?</summary>
+      <div class="a">
+        <p>성적표에 원점수, 과목평균, 수강자 수와 함께 적힌 A~E 비율이에요. 보통 원점수 90점 이상이 A, 80점 이상 B, 70점 이상 C, 60점 이상 D, 그 아래가 E예요. 과목에 따라 기준이 다를 수 있어요.</p>
+      </div>
+    </details>
+    <details>
+      <summary>표준편차를 모르면 어떻게 하나요?</summary>
+      <div class="a"><p>비워 두세요. 성취도별 분포비율이나 등급 컷 두 개 이상을 넣으면 표준편차를 자동으로 추정해요.</p></div>
+    </details>
+    <details>
+      <summary>예상 석차가 실제와 다를 수 있나요?</summary>
+      <div class="a"><p>네. 동점자가 많거나 점수가 특정 구간에 몰려 있으면 몇 등 정도 차이가 날 수 있어요. 정확한 석차와 등급은 학교 성적표를 확인하세요.</p></div>
+    </details>
+    <details>
+      <summary>동점자가 있으면 등급은 어떻게 정하나요?</summary>
+      <div class="a"><p>동점자가 등급 경계에 걸리면 <b>중간석차 = 석차 + (동석차 인원 − 1) ÷ 2</b>를 구하고, 중간석차를 수강자 수로 나눈 백분율을 등급 누적 비율과 비교해요.</p></div>
+    </details>
+    <details>
+      <summary>평균 등급은 어떻게 구하나요?</summary>
+      <div class="a"><p><b>(과목 등급 × 학점)의 합 ÷ 학점의 합</b>이에요. 석차등급이 없는 과목은 빼고 계산해요. 대학마다 반영 과목과 계산 방식이 달라서, 대학이 보는 점수와는 다를 수 있어요.</p></div>
+    </details>
+    <details>
+      <summary>입력한 성적은 어디에 저장되나요?</summary>
+      <div class="a"><p>이 기기의 브라우저에만 저장돼요. 서버로 보내지 않아요.</p></div>
+    </details>
+  </section>
+  <footer>계산 결과는 참고용입니다. 실제 석차와 등급은 학교 성적표를 확인하세요.</footer>
+</div>
+
+<div class="back" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="결과 카드">
+    <img id="card-img" alt="예상 석차 결과 카드">
+    <p>이미지를 길게 눌러 저장할 수도 있어요</p>
+    <div class="two"><button class="btn ghost" id="m-close">닫기</button><button class="btn" id="m-save">이미지 저장</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* ================= 수학 ================= */
+const CUM = [10, 34, 66, 90, 100];           // 5등급제 누적 비율(%)
+// 등급별 마지막 등수: 수강자 수 × 누적 비율을 반올림
+function cutoffs(n) { return CUM.map((p, i) => (i === CUM.length - 1 ? n : Math.floor((n * p + 50) / 100))); }
+
+function normCdf(z) {
+  const t = 1 / (1 + 0.3275911 * Math.abs(z) / Math.SQRT2);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z / 2);
+  return z >= 0 ? (1 + y) / 2 : (1 - y) / 2;
+}
+function normInv(p) {
+  const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+  const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+  const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+  const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+  let q, r;
+  if (p < 0.02425) { q = Math.sqrt(-2 * Math.log(p)); return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+  if (p > 1 - 0.02425) { q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+  q = p - 0.5; r = q * q;
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+}
+
+// 단조 3차 보간 (Fritsch–Carlson)
+function pchipFn(xs, ys) {
+  const n = xs.length, h = [], dl = [], m = new Array(n);
+  for (let i = 0; i < n - 1; i++) { h[i] = xs[i + 1] - xs[i]; dl[i] = (ys[i + 1] - ys[i]) / h[i]; }
+  m[0] = dl[0]; m[n - 1] = dl[n - 2];
+  for (let i = 1; i < n - 1; i++) {
+    if (dl[i - 1] * dl[i] <= 0) m[i] = 0;
+    else { const w1 = 2 * h[i] + h[i - 1], w2 = h[i] + 2 * h[i - 1]; m[i] = (w1 + w2) / (w1 / dl[i - 1] + w2 / dl[i]); }
+  }
+  const seg = x => { let i = 0; while (i < n - 2 && x > xs[i + 1]) i++; return i; };
+  return {
+    val(x) {
+      if (x <= xs[0]) return ys[0]; if (x >= xs[n - 1]) return ys[n - 1];
+      const i = seg(x), t = (x - xs[i]) / h[i], t2 = t * t, t3 = t2 * t;
+      return (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h[i] * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h[i] * m[i + 1];
+    },
+    der(x) {
+      const xx = Math.min(xs[n - 1], Math.max(xs[0], x)), i = seg(xx), t = (xx - xs[i]) / h[i], t2 = t * t;
+      return ((6 * t2 - 6 * t) * ys[i] + (3 * t2 - 4 * t + 1) * h[i] * m[i] + (-6 * t2 + 6 * t) * ys[i + 1] + (3 * t2 - 2 * t) * h[i] * m[i + 1]) / h[i];
+    }
+  };
+}
+
+// [0, top] 구간으로 자른 skew-normal을 격자 위에서 계산
+function snGrid(xi, om, al, top, M) {
+  const h = top / M, g = new Float64Array(M + 1), G = new Float64Array(M + 1);
+  for (let i = 0; i <= M; i++) { const z = (i * h - xi) / om; g[i] = Math.exp(-0.5 * z * z) * normCdf(al * z); }
+  for (let i = 1; i <= M; i++) G[i] = G[i - 1] + 0.5 * (g[i] + g[i - 1]) * h;
+  const tot = G[M]; if (!(tot > 1e-300)) return null;
+  for (let i = 0; i <= M; i++) { g[i] /= tot; G[i] /= tot; }
+  return { h, g, G, M, top };
+}
+function gridInv(gr, p) {
+  let lo = 0, hi = gr.M;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (gr.G[mid] < p) lo = mid; else hi = mid; }
+  const a = gr.G[lo], b = gr.G[hi];
+  return (lo + (b > a ? (p - a) / (b - a) : 0)) * gr.h;
+}
+function gridAt(arr, gr, x) {
+  const u = Math.min(gr.M, Math.max(0, x / gr.h)), i = Math.min(gr.M - 1, Math.floor(u));
+  return arr[i] + (arr[i + 1] - arr[i]) * (u - i);
+}
+
+function nelderMead(f, x0, step, iters) {
+  const n = x0.length; let S = [x0.slice()];
+  for (let i = 0; i < n; i++) { const x = x0.slice(); x[i] += step[i]; S.push(x); }
+  let V = S.map(f);
+  for (let it = 0; it < iters; it++) {
+    const idx = V.map((v, i) => i).sort((p, q) => V[p] - V[q]); S = idx.map(i => S[i]); V = idx.map(i => V[i]);
+    const c = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) c[j] += S[i][j] / n;
+    const xr = c.map((v, j) => v + (v - S[n][j])), fr = f(xr);
+    if (fr < V[0]) { const xe = c.map((v, j) => v + 2 * (v - S[n][j])), fe = f(xe); if (fe < fr) { S[n] = xe; V[n] = fe; } else { S[n] = xr; V[n] = fr; } }
+    else if (fr < V[n - 1]) { S[n] = xr; V[n] = fr; }
+    else {
+      const xc = c.map((v, j) => v + 0.5 * (S[n][j] - v)), fc = f(xc);
+      if (fc < V[n]) { S[n] = xc; V[n] = fc; }
+      else for (let i = 1; i <= n; i++) { S[i] = S[i].map((v, j) => S[0][j] + 0.5 * (v - S[0][j])); V[i] = f(S[i]); }
+    }
+  }
+  let b = 0; for (let i = 1; i <= n; i++) if (V[i] < V[b]) b = i;
+  return { x: S[b], v: V[b] };
+}
+
+/* 알고 있는 (점수, 그 점수 미만 비율) 기준점 모으기
+   - 등급 컷 k: 그 점수의 석차가 등급 마지막 등수 c_k → F = 1 − (c_k − 0.5)/N
+   - 성취도 비율: 90·80·70·60점 이상 누적 비율 cum% → F = 1 − cum/100 + 0.5/N */
+function anchorsOf(inp) {
+  const n = inp.n, cs = cutoffs(n); let top = isNaN(inp.max) ? 100 : inp.max, conflict = false; const list = [];
+  inp.cuts.forEach((c, k) => { if (!isNaN(c)) list.push({ s: c, F: 1 - (cs[k] - 0.5) / n, cut: true }); });
+  if (inp.ach) {
+    let cum = 0;
+    [90, 80, 70, 60].forEach((b, i) => { cum += inp.ach[i]; if (cum <= 1e-9) top = Math.min(top, b); else list.push({ s: b, F: 1 - Math.min(100, cum) / 100 + 0.5 / n }); });
+  }
+  list.sort((a, b) => b.s - a.s);
+  const tol = 0.003 + 1 / n, kept = [];
+  list.forEach(a => {
+    if (a.cut && a.s > top) { conflict = true; return; }
+    if (!(a.s > 0 && a.s < top - 1e-9 && a.F > 0 && a.F < 1)) return;
+    const p = kept[kept.length - 1];
+    if (!p) { kept.push(a); return; }
+    if (a.s === p.s) { if (Math.abs(a.F - p.F) > tol) conflict = true; return; }
+    if (a.F < p.F - 1e-9) kept.push(a);
+    else if (a.F > p.F + tol) conflict = true;
+  });
+  return { anchors: kept.reverse(), top, conflict };
+}
+
+/* 분포 추정
+   1) skew-normal(위치 ξ, 폭 ω, 치우침 α)을 평균·표준편차·기준점에 최소제곱으로 맞춘다.
+   2) 기준점에서 누적 비율이 정확히 맞도록 단조 보간으로 보정한다. */
+function fitDist(inp) {
+  const n = inp.n, cs = cutoffs(n), mean = inp.mean, A = anchorsOf(inp), an = A.anchors;
+  const top = Math.max(A.top, an.length ? an[an.length - 1].s + 0.5 : 0), sdGiven = inp.sd > 0;
+  let S = sdGiven ? inp.sd : NaN;
+  if (!sdGiven && an.length >= 2) {
+    const z = an.map(a => normInv(a.F)), zm = z.reduce((p, q) => p + q, 0) / z.length, sm0 = an.reduce((p, q) => p + q.s, 0) / an.length;
+    let s0 = 0, sz = 0; an.forEach((a, i) => { s0 += (z[i] - zm) * (a.s - sm0); sz += (z[i] - zm) * (z[i] - zm); });
+    S = s0 / sz;
+  }
+  if (!(S > 1)) S = Math.max(3, (top - mean) / 2.5);
+  const M0 = 200;
+  const loss = th => {
+    const om = Math.exp(th[1]); if (!(om > 0.5 && om < 300) || Math.abs(th[2]) > 12) return 1e6;
+    const gr = snGrid(th[0], om, th[2], top, M0); if (!gr) return 1e6;
+    let m1 = 0, m2 = 0;
+    for (let i = 0; i <= M0; i++) { const w = (i === 0 || i === M0 ? 0.5 : 1) * gr.g[i] * gr.h, s = i * gr.h; m1 += w * s; m2 += w * s * s; }
+    let L = Math.pow((m1 - mean) / S, 2) + 0.001 * th[2] * th[2];
+    for (let k = 0; k < an.length; k++) L += Math.pow((gridInv(gr, an[k].F) - an[k].s) / S, 2);
+    if (sdGiven) L += Math.pow((Math.sqrt(Math.max(0, m2 - m1 * m1)) - inp.sd) / S, 2);
+    return L;
+  };
+  let best = null;
+  [-4, -1.5, 0, 1.5].forEach(al => {
+    const dlt = al / Math.sqrt(1 + al * al), om = S / Math.sqrt(1 - 2 * dlt * dlt / Math.PI), xi = mean - om * dlt * Math.sqrt(2 / Math.PI);
+    const r = nelderMead(loss, [xi, Math.log(om), al], [S * 0.5, 0.3, 1], 220);
+    if (!best || r.v < best.v) best = r;
+  });
+
+  const gr = snGrid(best.x[0], Math.exp(best.x[1]), best.x[2], top, 600);
+  const us = [0], fv = [0];
+  an.forEach(a => { const u = gridAt(gr.G, gr, a.s); if (u > us[us.length - 1] + 1e-6 && u < 1 - 1e-6 && a.F > fv[fv.length - 1] + 1e-9) { us.push(u); fv.push(a.F); } });
+  us.push(1); fv.push(1);
+  const T = pchipFn(us, fv);
+  const F = x => (x >= top ? 1 : x <= 0 ? 0 : T.val(gridAt(gr.G, gr, x)));
+  const f = x => (x > top || x < 0 ? 0 : Math.max(0, T.der(gridAt(gr.G, gr, x)) * gridAt(gr.g, gr, x)));
+  const inv = p => { let a = 0, b = top; for (let i = 0; i < 44; i++) { const c = (a + b) / 2; if (F(c) < p) a = c; else b = c; } return (a + b) / 2; };
+
+  let m0 = 0, m1 = 0, m2 = 0, m3 = 0;
+  for (let i = 0; i <= gr.M; i++) { const s = i * gr.h, w = (i === 0 || i === gr.M ? 0.5 : 1) * f(s) * gr.h; m0 += w; m1 += w * s; m2 += w * s * s; m3 += w * s * s * s; }
+  m1 /= m0; m2 /= m0; m3 /= m0;
+  const sd = Math.sqrt(Math.max(0, m2 - m1 * m1)), skew = sd > 0 ? (m3 - 3 * m1 * m2 + 2 * m1 * m1 * m1) / (sd * sd * sd) : 0;
+  const lo = Math.max(0, Math.floor(inv(0.004) / 5) * 5);
+  // 그래프에 그릴 곡선은 가우시안 커널로 살짝 다듬는다 (석차 계산에는 위의 F를 그대로 쓴다)
+  const raw = new Float64Array(gr.M + 1), sm = new Float64Array(gr.M + 1), sg = Math.max(1.2, 0.12 * sd) / gr.h, R = Math.ceil(sg * 3);
+  for (let i = 0; i <= gr.M; i++) raw[i] = f(i * gr.h);
+  for (let i = 0; i <= gr.M; i++) {
+    let a = 0, w = 0;
+    for (let j = Math.max(0, i - R); j <= Math.min(gr.M, i + R); j++) { const k = Math.exp(-0.5 * Math.pow((j - i) / sg, 2)); a += k * raw[j]; w += k; }
+    sm[i] = a / w;
+  }
+  const fs = x => (x > top || x < 0 ? 0 : gridAt(sm, gr, x));
+  return { n, cs, cuts: inp.cuts, top, maxScore: isNaN(inp.max) ? top : inp.max, mean: m1, sd, skew, sdGiven, F, f, fs, inv, lo };
+}
+
+// 등급 g의 컷 점수 (직접 넣은 값이 있으면 그 값, 없으면 추정)
+function gradeCut(d, g) {
+  if (g <= 3 && !isNaN(d.cuts[g - 1])) return { v: d.cuts[g - 1], est: false };
+  return { v: d.inv(1 - (d.cs[g - 1] - 0.5) / d.n), est: true };
+}
+function resultAt(d, x) {
+  const n = d.n, topFrac = x >= d.maxScore ? 0 : 1 - d.F(x);
+  const rank = Math.min(n, Math.max(1, Math.round(n * topFrac + 0.5)));
+  const grade = d.cs.findIndex(c => rank <= c) + 1;
+  let next = null;
+  if (grade > 1) { const c = gradeCut(d, grade - 1); next = { grade: grade - 1, score: c.v, est: c.est, need: Math.max(0, c.v - x) }; }
+  return { x, top: Math.max(topFrac, 0.5 / n) * 100, rank, grade, next };
+}
+
+// 석차 → 등급 (동점자가 등급 경계에 걸리면 중간석차 백분율로 판정)
+function gradeOf(n, r, t) {
+  const cs = cutoffs(n), mid = r + (t - 1) / 2, pct = mid / n * 100;
+  let g = cs.findIndex(c => r <= c);
+  if (t > 1 && r + t - 1 > cs[g]) g = CUM.findIndex(p => pct <= p + 1e-9);
+  return { grade: g + 1, mid, pct, cs };
+}
+function validRank(n, r, t) {
+  if (!Number.isInteger(n) || n < 1) return "수강자 수를 1 이상으로 넣어 주세요.";
+  if (!Number.isInteger(r) || r < 1) return "석차를 1 이상으로 넣어 주세요.";
+  if (!Number.isInteger(t) || t < 1) return "동점자가 없으면 동석차 인원에 1을 넣어 주세요.";
+  if (r > n) return "석차가 수강자 수보다 커요.";
+  if (r + t - 1 > n) return "석차와 동석차 인원을 합치면 수강자 수를 넘어요.";
+  return "";
+}
+function average(subjects) {
+  let sum = 0, credits = 0;
+  subjects.forEach(s => { const g = Number(s.grade), c = Number(s.credit); if (g >= 1 && g <= 5 && c > 0) { sum += g * c; credits += c; } });
+  return { avg: credits ? sum / credits : null, credits };
+}
+function neededAvg(curAvg, curCredits, remCredits, target) { return (target * (curCredits + remCredits) - curAvg * curCredits) / remCredits; }
+
+/* ================= 공통 ================= */
+const $ = id => document.getElementById(id);
+const fmt = v => String(Math.round(v * 10) / 10);
+const fmt2 = v => (Math.round(v * 100) / 100).toFixed(2);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const numOf = v => { const t = String(v == null ? "" : v).trim(); return t === "" ? NaN : Number(t); };
+const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+let toastTimer;
+function toast(m) { const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 1800); }
+let tabNow = "predict";
+
+/* ================= ① 예상 석차 ================= */
+const PK = ["x", "mean", "n", "sd", "a", "b", "c", "d", "e", "c1", "c2", "c3", "max"];
+const PEX = { x: 84, mean: 69, n: 250, sd: 18.2, a: 11.3, b: 20.3, c: 21, d: 18.3, e: 29.1, c1: "", c2: "", c3: "", max: "" };
+let P = store.get("seokcha_v2"); if (!P || !P.v) P = { v: Object.assign({}, PEX), example: true };
+let dist = null, distKey = "", inpNow = null, sim = null, cur = null;
+
+function parseP() {
+  const v = P.v, n = numOf(v.n), x = numOf(v.x), mean = numOf(v.mean), sd = numOf(v.sd), max = numOf(v.max);
+  const cuts = [numOf(v.c1), numOf(v.c2), numOf(v.c3)], ar = ["a", "b", "c", "d", "e"].map(k => numOf(v[k])), filled = ar.filter(q => !isNaN(q)).length;
+  const inp = { n, x, mean, sd, max, cuts, ach: filled === 5 ? ar : null };
+  const given = cuts.filter(c => !isNaN(c));
+  let e = "";
+  if (!Number.isInteger(n) || n < 20) e = "수강자 수를 20명 이상으로 넣어 주세요.";
+  else if (isNaN(x) || isNaN(mean)) e = "원점수와 과목 평균을 넣어 주세요.";
+  else if (x < 0 || mean <= 0) e = "원점수와 과목 평균을 확인해 주세요.";
+  else if (!isNaN(sd) && !(sd > 0)) e = "표준편차는 0보다 커야 해요.";
+  else if (filled > 0 && filled < 5) e = "성취도 비율은 A부터 E까지 모두 넣어 주세요.";
+  else if (inp.ach && ar.some(q => q < 0)) e = "성취도 비율은 0 이상이어야 해요.";
+  else if (inp.ach && Math.abs(ar.reduce((p, q) => p + q, 0) - 100) > 1.5) e = "성취도 비율의 합이 100%가 아니에요. (지금 " + fmt(ar.reduce((p, q) => p + q, 0)) + "%)";
+  else if (given.some((c, i) => c <= 0 || (i > 0 && c >= given[i - 1]))) e = "등급 컷은 1등급 > 2등급 > 3등급 순서여야 해요.";
+  else if (!isNaN(max) && !(max > 0)) e = "최고점을 확인해 주세요.";
+  else if (!isNaN(max) && given.length && max < given[0]) e = "최고점이 등급 컷보다 낮아요.";
+  if (!e) {
+    const A = anchorsOf(inp);
+    if (A.conflict) e = "성취도 비율과 등급 컷이 서로 맞지 않아요.";
+    else if (!(sd > 0) && A.anchors.length < 2) e = "표준편차, 성취도 비율, 등급 컷(2개 이상) 중 하나는 넣어 주세요.";
+    else if (x > A.top) e = !isNaN(max) ? "원점수가 최고점보다 높아요." : A.top < 100 ? "원점수가 성취도 비율과 맞지 않아요." : "100점이 넘는 점수는 최고점도 함께 넣어 주세요.";
+    else if (mean >= A.top) e = "과목 평균이 최고점보다 높아요.";
+  }
+  return { inp, e };
+}
+
+function textW(t, size) { let w = 0; for (const ch of t) w += ch.charCodeAt(0) > 255 ? size : size * 0.6; return w; }
+function chartModel(d, inp, score, W, H, pad) {
+  const lo = Math.min(d.lo, Math.floor(score / 5) * 5, Math.floor(inp.x / 5) * 5), hi = d.maxScore;
+  const X = s => pad.l + (s - lo) / (hi - lo) * (W - pad.l - pad.r), base = H - pad.b, K = 160, pts = [];
+  let fm = 0;
+  for (let i = 0; i <= K; i++) { const s = lo + (hi - lo) * i / K, v = d.fs(s); pts.push([s, v]); if (v > fm) fm = v; }
+  const Y = v => base - (v / fm) * (base - pad.t);
+  const me = Math.min(hi, Math.max(lo, score));
+  const ahead = [[me, d.fs(me)]].concat(pts.filter(p => p[0] > me));
+  const marks = [{ s: inp.mean, t: "평균 " + fmt(inp.mean), avg: true }]
+    .concat([1, 2, 3].map(g => { const c = gradeCut(d, g); return { s: c.v, t: g + "컷 " + (c.est ? Math.round(c.v) : fmt(c.v)) }; }))
+    .filter(m => m.s >= lo && m.s <= hi).sort((a, b) => a.s - b.s);
+  return { lo, hi, X, Y, base, P: pts, me, ahead, marks };
+}
+function renderChart(d, inp, r) {
+  const el = $("chart"), W = Math.max(260, Math.round(el.clientWidth)), H = W < 520 ? 230 : 280;
+  const pad = { l: 8, r: 8, t: 66, b: 26 }, m = chartModel(d, inp, r.x, W, H, pad), X = m.X, Y = m.Y, base = m.base;
+  const pt = p => X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1);
+  const curve = "M" + m.P.map(pt).join("L");
+  const area = curve + "L" + X(m.hi).toFixed(1) + " " + base + "L" + X(m.lo).toFixed(1) + " " + base + "Z";
+  const ahead = "M" + X(m.me).toFixed(1) + " " + base + "L" + m.ahead.map(pt).join("L") + "L" + X(m.hi).toFixed(1) + " " + base + "Z";
+  let s = '<svg viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '" xmlns="http://www.w3.org/2000/svg">';
+  s += '<path d="' + area + '" fill="var(--area)"/><path d="' + ahead + '" fill="var(--accent)" fill-opacity=".24"/>';
+  s += '<path d="' + curve + '" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linejoin="round"/>';
+  s += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + base + '" y2="' + base + '" stroke="var(--line)"/>';
+  for (let t = Math.ceil(m.lo / 10) * 10; t <= m.hi; t += 10) {
+    const x = X(t), anchor = x < 14 ? "start" : x > W - 14 ? "end" : "middle";
+    s += '<text class="c-tick" x="' + x.toFixed(1) + '" y="' + (base + 17) + '" text-anchor="' + anchor + '">' + t + "</text>";
+  }
+  const last = [-1e9, -1e9]; let labels = "";
+  m.marks.forEach(k => {
+    const x = X(k.s), w = textW(k.t, 11), row = x - last[0] >= w + 10 ? 0 : x - last[1] >= w + 10 ? 1 : 0, y = 44 + row * 14;
+    last[row] = x;
+    const tx = Math.min(W - pad.r - w / 2, Math.max(pad.l + w / 2, x));
+    s += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (y + 5) + '" y2="' + base + '" stroke="var(' + (k.avg ? "--sub" : "--ink") + ')" stroke-width="1" stroke-dasharray="3 4" opacity="' + (k.avg ? ".8" : ".55") + '"/>';
+    labels += '<text class="' + (k.avg ? "c-avg" : "c-lab") + '" x="' + tx.toFixed(1) + '" y="' + y + '" text-anchor="middle">' + k.t + "</text>";
+  });
+  if (sim !== null) {
+    const gx = X(Math.min(m.hi, Math.max(m.lo, inp.x)));
+    s += '<line x1="' + gx.toFixed(1) + '" x2="' + gx.toFixed(1) + '" y1="' + Y(d.fs(inp.x)).toFixed(1) + '" y2="' + base + '" stroke="var(--ink)" stroke-width="1.2" opacity=".5"/>';
+    s += '<circle cx="' + gx.toFixed(1) + '" cy="' + Y(d.fs(inp.x)).toFixed(1) + '" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.4"/>';
+  }
+  const mx = X(m.me), my = Y(d.fs(m.me)), label = (sim !== null ? "가상 " : "내 점수 ") + fmt(r.x) + " · 상위 " + r.top.toFixed(1) + "%";
+  const lw = textW(label, 12) + 20, lx = Math.min(W - pad.r - lw / 2, Math.max(pad.l + lw / 2, mx));
+  s += '<line x1="' + mx.toFixed(1) + '" x2="' + mx.toFixed(1) + '" y1="28" y2="' + base + '" stroke="var(--accent)" stroke-width="2"/>';
+  s += '<circle cx="' + mx.toFixed(1) + '" cy="' + my.toFixed(1) + '" r="5.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>';
+  s += labels;
+  s += '<rect x="' + (lx - lw / 2).toFixed(1) + '" y="5" width="' + lw.toFixed(1) + '" height="24" rx="12" fill="var(--chip-bg)"/>';
+  s += '<text class="c-me" x="' + lx.toFixed(1) + '" y="21.5" text-anchor="middle">' + label + "</text></svg>";
+  el.innerHTML = s;
+}
+
+function fillP() { PK.forEach(k => { const el = $("i-" + k); if (document.activeElement !== el) el.value = P.v[k] == null ? "" : P.v[k]; }); $("ex-tag").hidden = !P.example; }
+function renderP() {
+  const p = parseP();
+  $("err").textContent = p.e; $("err").hidden = !p.e;
+  $("out").classList.toggle("dim", !!p.e);
+  if (p.e) { cur = null; return; }
+  const inp = p.inp, key = JSON.stringify([inp.n, inp.mean, inp.sd, inp.max, inp.cuts, inp.ach]);
+  if (key !== distKey) { dist = fitDist(inp); distKey = key; }
+  inpNow = inp;
+  if (sim !== null && (sim > dist.maxScore || sim === inp.x)) sim = null;
+  const d = dist, r0 = resultAt(d, inp.x), r = sim === null ? r0 : resultAt(d, sim);
+  cur = { d, inp, r, r0 };
+
+  $("p-cap").textContent = sim === null ? "예상 석차" : "가상 점수 " + fmt(sim) + "점일 때";
+  $("p-rank").textContent = "약 " + r.rank + "등";
+  $("p-line").textContent = d.n + "명 중 · 상위 " + r.top.toFixed(1) + "%";
+  $("p-grade").textContent = r.grade + "등급";
+  if (r.next) {
+    $("p-next").textContent = "+" + fmt(Math.max(0.1, r.next.need)) + "점";
+    $("p-next-s").textContent = r.next.grade + "등급 컷 " + (r.next.est ? "약 " : "") + fmt(r.next.score) + "점";
+  } else { $("p-next").textContent = "달성"; $("p-next-s").textContent = ""; }
+  $("c-meta").textContent = "표준편차 " + fmt(d.sdGiven ? inp.sd : d.sd) + (d.sdGiven ? "" : " 추정") + " · 왜도 " + d.skew.toFixed(2);
+  $("i-sd").placeholder = d.sdGiven ? "자동 추정" : "자동 " + fmt(d.sd);
+  renderChart(d, inp, r);
+
+  const sl = $("sim"), lo = Math.min(d.lo, Math.floor(inp.x / 5) * 5), whole = Number.isInteger(inp.x) && Number.isInteger(d.maxScore);
+  sl.min = lo; sl.max = d.maxScore; sl.step = whole ? 1 : 0.5;
+  if (document.activeElement !== sl || sim === null) sl.value = r.x;
+  $("sim-lo").textContent = lo + "점"; $("sim-hi").textContent = fmt(d.maxScore) + "점";
+  $("sim-reset").hidden = sim === null;
+  if (sim === null) $("sim-out").innerHTML = "<b>" + fmt(inp.x) + "점</b> · " + r0.rank + "등";
+  else {
+    const dr = r0.rank - r.rank;
+    $("sim-out").innerHTML = fmt(inp.x) + "점 " + r0.rank + "등 → <b>" + fmt(sim) + "점 " + r.rank + "등</b>" + (dr ? " (" + Math.abs(dr) + "등 " + (dr > 0 ? "상승" : "하락") + ")" : "");
+  }
+  let rows = "", prev = 0;
+  d.cs.forEach((c, i) => {
+    const g = i + 1, cut = g === 5 ? null : gradeCut(d, g), cnt = c - prev;
+    rows += "<tr" + (g === r.grade ? ' class="me"' : "") + "><td>" + g + "등급</td><td>" + (cut ? (cut.est ? "약 " : "") + fmt(cut.v) + "점" : "-") + "</td><td>" + (cnt > 0 ? (prev + 1) + "~" + c + "등" : "-") + "</td><td>" + (cnt > 0 ? cnt + "명" : "-") + "</td></tr>";
+    prev = c;
+  });
+  $("cuts").innerHTML = rows;
+}
+
+/* 결과 카드 (PNG) */
+function drawCard() {
+  const d = cur.d, inp = cur.inp, r = cur.r, W = 1080, H = 1350;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d"), font = getComputedStyle(document.body).fontFamily;
+  const C = { paper: "#F6F7F8", white: "#FFFFFF", ink: "#101828", sub: "#667085", line: "#E3E6EA", navy: "#0C1729", mint: "#62E2B1", accent: "#0A8560", area: "#EDF0F3" };
+  const T = (t, x, y, size, weight, color, align) => { g.font = weight + " " + size + "px " + font; g.fillStyle = color; g.textAlign = align || "left"; g.fillText(t, x, y); };
+  const box = (x, y, w, h, rad) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, rad); else g.rect(x, y, w, h); };
+  g.fillStyle = C.paper; g.fillRect(0, 0, W, H);
+  g.fillStyle = C.navy; box(60, 60, 960, 400, 40); g.fill();
+  T("예상 석차", 116, 150, 34, 700, C.white);
+  T("약 " + r.rank + "등", 108, 320, 170, 800, C.mint);
+  T(d.n + "명 중 · 상위 " + r.top.toFixed(1) + "%", 116, 404, 40, 500, C.white);
+  const boxes = [["내 점수", fmt(r.x) + "점"], ["예상 등급", r.grade + "등급"], ["다음 등급까지", r.next ? "+" + fmt(Math.max(0.1, r.next.need)) + "점" : "달성"]];
+  g.lineWidth = 2; g.strokeStyle = C.line;
+  boxes.forEach((b, i) => {
+    const x = 60 + i * 327, y = 490;
+    g.fillStyle = C.white; box(x, y, 306, 150, 24); g.fill(); g.stroke();
+    T(b[0], x + 28, y + 56, 28, 500, C.sub); T(b[1], x + 28, y + 118, 50, 700, C.ink);
+  });
+  g.fillStyle = C.white; g.strokeStyle = C.line; g.lineWidth = 2; box(60, 670, 960, 560, 28); g.fill(); g.stroke();
+  const ox = 100, oy = 706, cw = 880, ch = 484, pad = { l: 0, r: 0, t: 136, b: 44 };
+  const m = chartModel(d, inp, r.x, cw, ch, pad), X = s => ox + m.X(s), Y = v => oy + m.Y(v), base = oy + m.base;
+  const trace = pts => { pts.forEach((p, i) => { if (i) g.lineTo(X(p[0]), Y(p[1])); else g.moveTo(X(p[0]), Y(p[1])); }); };
+  g.beginPath(); trace(m.P); g.lineTo(X(m.hi), base); g.lineTo(X(m.lo), base); g.closePath(); g.fillStyle = C.area; g.fill();
+  g.beginPath(); g.moveTo(X(m.me), base); m.ahead.forEach(p => g.lineTo(X(p[0]), Y(p[1]))); g.lineTo(X(m.hi), base); g.closePath(); g.fillStyle = "rgba(10,133,96,.24)"; g.fill();
+  g.beginPath(); trace(m.P); g.strokeStyle = C.ink; g.lineWidth = 3; g.lineJoin = "round"; g.stroke();
+  g.beginPath(); g.moveTo(ox, base); g.lineTo(ox + cw, base); g.strokeStyle = C.line; g.lineWidth = 2; g.stroke();
+  for (let t = Math.ceil(m.lo / 10) * 10; t <= m.hi; t += 10) { const x = X(t); T(String(t), x, base + 36, 24, 400, C.sub, x < ox + 20 ? "left" : x > ox + cw - 20 ? "right" : "center"); }
+  const last = [-1e9, -1e9];
+  m.marks.forEach(k => {
+    const x = X(k.s), w = textW(k.t, 24), row = x - last[0] >= w + 16 ? 0 : x - last[1] >= w + 16 ? 1 : 0, y = oy + 88 + row * 30; last[row] = x;
+    g.save(); g.setLineDash([6, 8]); g.beginPath(); g.moveTo(x, y + 8); g.lineTo(x, base); g.strokeStyle = k.avg ? C.sub : C.ink; g.globalAlpha = .6; g.lineWidth = 2; g.stroke(); g.restore();
+    T(k.t, Math.min(ox + cw - w / 2, Math.max(ox + w / 2, x)), y, 24, k.avg ? 500 : 700, k.avg ? C.sub : C.ink, "center");
+  });
+  const mx = X(m.me), label = "내 점수 " + fmt(r.x), lw = textW(label, 26) + 40, lx = Math.min(ox + cw - lw / 2, Math.max(ox + lw / 2, mx));
+  g.beginPath(); g.moveTo(mx, oy + 46); g.lineTo(mx, base); g.strokeStyle = C.accent; g.lineWidth = 4; g.stroke();
+  g.beginPath(); g.arc(mx, Y(d.fs(m.me)), 11, 0, Math.PI * 2); g.fillStyle = C.accent; g.fill(); g.strokeStyle = C.white; g.lineWidth = 4; g.stroke();
+  g.fillStyle = C.navy; box(lx - lw / 2, oy, lw, 46, 23); g.fill();
+  T(label, lx, oy + 32, 26, 700, C.mint, "center");
+  T("평균 " + fmt(inp.mean) + " · 표준편차 " + fmt(d.sdGiven ? inp.sd : d.sd) + " · 수강자 " + d.n + "명", 64, 1288, 28, 500, C.sub);
+  T("5등급제 내신 계산기 · 예측값", 1016, 1288, 26, 400, C.sub, "right");
+  return c;
+}
+let cardBlob = null, cardUrl = "";
+$("b-save").addEventListener("click", async () => {
+  if (!cur) { toast("입력값을 먼저 확인해 주세요"); return; }
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+  const canvas = drawCard();
+  cardBlob = await new Promise(res => canvas.toBlob(res, "image/png"));
+  if (cardUrl) URL.revokeObjectURL(cardUrl);
+  cardUrl = URL.createObjectURL(cardBlob);
+  $("card-img").src = cardUrl; $("modal").hidden = false; $("m-save").focus();
+});
+$("m-save").addEventListener("click", async () => {
+  const name = "예상석차.png";
+  try {
+    const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+    if (dl) { await dl.save({ filename: name, data: cardBlob }); toast("저장했어요"); return; }
+  } catch (e) { if (e && e.code === "declined") return; }
+  // 휴대폰에서는 공유 창을 열어 사진 앱 저장이나 메신저 공유를 할 수 있게 한다
+  try {
+    const file = new File([cardBlob], name, { type: "image/png" });
+    if (matchMedia("(pointer: coarse)").matches && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  try { const a = document.createElement("a"); a.href = cardUrl; a.download = name; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {}
+});
+const closeModal = () => { $("modal").hidden = true; };
+$("m-close").addEventListener("click", closeModal);
+$("modal").addEventListener("click", e => { if (e.target === $("modal")) closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("modal").hidden) closeModal(); });
+
+PK.forEach(k => $("i-" + k).addEventListener("input", e => {
+  P.v[k] = e.target.value; P.example = false; if (k === "x") sim = null;
+  $("ex-tag").hidden = true; store.set("seokcha_v2", P); renderP();
+}));
+$("b-example").addEventListener("click", () => { P = { v: Object.assign({}, PEX), example: true }; sim = null; store.set("seokcha_v2", P); fillP(); renderP(); });
+$("sim").addEventListener("input", e => { if (!inpNow) return; const v = Number(e.target.value); sim = v === inpNow.x ? null : v; renderP(); });
+$("sim-reset").addEventListener("click", () => { sim = null; renderP(); });
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (cur && tabNow === "predict") renderChart(cur.d, cur.inp, cur.r); }, 80); });
+
+/* ================= ② 석차로 등급 찾기 ================= */
+let G = store.get("seokcha_grade") || { n: 178, r: 20, t: 1 };
+function renderG() {
+  ["n", "r", "t"].forEach(k => { const el = $("g-" + k); if (document.activeElement !== el) el.value = G[k] == null ? "" : G[k]; });
+  const n = numOf(G.n), r = numOf(G.r), t = numOf(G.t), e = validRank(n, r, t);
+  $("g-err").textContent = e; $("g-err").hidden = !e; $("g-out").classList.toggle("dim", !!e);
+  if (e) return;
+  const res = gradeOf(n, r, t), cs = res.cs, g = res.grade;
+  $("g-grade").textContent = g + "등급";
+  $("g-line").textContent = "석차백분율 " + fmt2(res.pct) + "% · " + (t > 1 ? "중간석차 " + fmt(res.mid) + "등" : r + "등") + " / " + n + "명";
+  let rows = "", prev = 0;
+  cs.forEach((c, i) => {
+    const k = c - prev;
+    rows += "<tr" + (i + 1 === g ? ' class="me"' : "") + "><td>" + (i + 1) + "등급</td><td>" + CUM[i] + "%</td><td>" + (k > 0 ? (prev + 1) + "~" + c + "등" : "-") + "</td><td>" + (k > 0 ? k + "명" : "-") + "</td></tr>";
+    prev = c;
+  });
+  $("g-table").innerHTML = rows;
+}
+["n", "r", "t"].forEach(k => $("g-" + k).addEventListener("input", e => { G[k] = e.target.value; store.set("seokcha_grade", G); renderG(); }));
+
+/* ================= ③ 평균 등급 ================= */
+const SEMS = ["1-1", "1-2", "2-1", "2-2", "3-1", "3-2"];
+const AEX = {
+  "1-1": [["국어", 4, 2], ["수학", 4, 1], ["영어", 4, 2], ["한국사", 3, 1], ["통합사회", 4, 3], ["통합과학", 4, 1], ["과학탐구실험", 1, 0]],
+  "1-2": [["국어", 4, 2], ["수학", 4, 1], ["영어", 4, 1], ["한국사", 3, 2], ["통합사회", 4, 2], ["통합과학", 4, 1], ["과학탐구실험", 1, 0]]
+};
+function avgExample() { const data = {}; SEMS.forEach(k => { data[k] = (AEX[k] || []).map(a => ({ name: a[0], credit: a[1], grade: a[2] })); }); return { sem: "1-2", example: true, data }; }
+let Av = store.get("naesin5_v1"); if (!Av || !Av.data) Av = avgExample(); SEMS.forEach(k => { Av.data[k] = Av.data[k] || []; });
+if (!SEMS.includes(Av.sem)) Av.sem = "1-1";
+let Goal = store.get("seokcha_goal") || { rem: "", target: "1.5" };
+const saveA = () => store.set("naesin5_v1", Av);
+const semLabel = k => k[0] + "학년 " + k[2] + "학기";
+
+function renderANumbers() {
+  const all = average(SEMS.flatMap(k => Av.data[k])), sa = average(Av.data[Av.sem]);
+  $("a-total").textContent = all.avg ? fmt2(all.avg) : "-";
+  $("a-line").textContent = all.credits + "학점" + (sa.avg ? " · " + semLabel(Av.sem) + " 평균 " + fmt2(sa.avg) : "");
+  $("a-ex").hidden = !Av.example;
+  $("a-sems").innerHTML = SEMS.map(k => { const a = average(Av.data[k]); return '<button role="tab" aria-selected="' + (k === Av.sem) + '" data-sem="' + k + '"' + (k === Av.sem ? ' class="on"' : "") + ">" + k + "<b>" + (a.avg ? fmt2(a.avg) : "·") + "</b></button>"; }).join("");
+  if (document.activeElement !== $("a-rem")) $("a-rem").value = Goal.rem === "" && all.credits ? all.credits * 2 : Goal.rem;
+  if (document.activeElement !== $("a-target")) $("a-target").value = Goal.target;
+  const rem = numOf($("a-rem").value), target = numOf($("a-target").value);
+  let e = "";
+  if (!all.avg) e = "과목을 먼저 넣어 주세요.";
+  else if (!(rem > 0)) e = "남은 학점을 1 이상으로 넣어 주세요.";
+  else if (!(target >= 1 && target <= 5)) e = "목표 평균을 1에서 5 사이로 넣어 주세요.";
+  $("a-err").textContent = e; $("a-err").hidden = !e;
+  if (e) { $("a-need").textContent = "-"; $("a-best").textContent = "-"; return; }
+  const need = neededAvg(all.avg, all.credits, rem, target), best = (all.avg * all.credits + rem) / (all.credits + rem);
+  $("a-best").textContent = fmt2(best);
+  $("a-need").textContent = need < 1 - 1e-9 ? "불가" : need >= 5 ? "달성" : fmt2(need);
+}
+function renderA() {
+  renderANumbers();
+  const list = Av.data[Av.sem];
+  $("a-list").innerHTML = list.length ? list.map((s, i) =>
+    '<div class="row" data-i="' + i + '">' +
+    '<input id="an-' + i + '" data-f="name" value="' + esc(s.name) + '" placeholder="과목명" aria-label="과목명">' +
+    '<input id="ak-' + i + '" class="cr" data-f="credit" inputmode="numeric" value="' + esc(s.credit) + '" aria-label="학점">' +
+    '<div class="mark" role="group" aria-label="등급">' + [1, 2, 3, 4, 5].map(g => '<button data-g="' + g + '" aria-pressed="' + (Number(s.grade) === g) + '" aria-label="' + g + '등급">' + g + "</button>").join("") + "</div>" +
+    '<button class="del" data-del="' + i + '" aria-label="' + esc(s.name || "과목") + ' 지우기">✕</button></div>').join("")
+    : '<p class="meta" style="padding:14px 0;border-top:1px solid var(--line)">아직 과목이 없어요.</p>';
+}
+const touchA = () => { Av.example = false; saveA(); };
+$("a-sems").addEventListener("click", e => { const b = e.target.closest("[data-sem]"); if (!b) return; Av.sem = b.dataset.sem; saveA(); renderA(); });
+$("a-list").addEventListener("input", e => {
+  const row = e.target.closest(".row"); if (!row || !e.target.dataset.f) return;
+  const s = Av.data[Av.sem][Number(row.dataset.i)], f = e.target.dataset.f;
+  s[f] = f === "name" ? e.target.value : Number(e.target.value); touchA(); renderANumbers();
+});
+$("a-list").addEventListener("click", e => {
+  const row = e.target.closest(".row"); if (!row) return;
+  const i = Number(row.dataset.i), g = e.target.closest("[data-g]");
+  if (g) { const s = Av.data[Av.sem][i], v = Number(g.dataset.g); s.grade = Number(s.grade) === v ? 0 : v; touchA(); renderA(); }
+  else if (e.target.closest("[data-del]")) { Av.data[Av.sem].splice(i, 1); touchA(); renderA(); }
+});
+$("a-add").addEventListener("click", () => { Av.data[Av.sem].push({ name: "", credit: 4, grade: 0 }); touchA(); renderA(); const el = $("an-" + (Av.data[Av.sem].length - 1)); if (el) el.focus(); });
+$("a-clear").addEventListener("click", () => { SEMS.forEach(k => { Av.data[k] = []; }); Av.sem = "1-1"; touchA(); Goal.rem = ""; store.set("seokcha_goal", Goal); renderA(); toast("예시를 지웠어요"); });
+["rem", "target"].forEach(k => $("a-" + k).addEventListener("input", e => { Goal[k] = e.target.value; store.set("seokcha_goal", Goal); renderANumbers(); }));
+
+/* ================= 탭 ================= */
+const TABS = ["predict", "grade", "average"];
+function show(tab) {
+  tabNow = TABS.includes(tab) ? tab : "predict";
+  TABS.forEach(k => { $("view-" + k).hidden = k !== tabNow; });
+  document.querySelectorAll(".tabs a").forEach(a => { const on = a.dataset.tab === tabNow; a.classList.toggle("on", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  if (tabNow === "predict") { fillP(); renderP(); }
+  if (tabNow === "grade") renderG();
+  if (tabNow === "average") renderA();
+}
+document.querySelectorAll(".tabs a").forEach(a => a.addEventListener("click", e => {
+  e.preventDefault();
+  try { history.replaceState(null, "", "#" + a.dataset.tab); } catch (err) {}
+  show(a.dataset.tab);
+}));
+window.addEventListener("hashchange", () => show((location.hash || "").slice(1)));
+(function () { try { const f = localStorage.getItem("naesin5_font"); if (f) document.documentElement.dataset.font = f; } catch (e) {} })();
+show((location.hash || "").slice(1));
+</script>
+</body>
+</html>
